@@ -108,13 +108,13 @@ const keyQueue: string[] = []
 
 stdin.on("keypress", (char, key) => {
     if (char === "\x03" || char === "\x04" || key.name === "q") {
-        // ctrl-c, ctrl-d or escape
+        // ctrl-c, ctrl-d or q
         console.log("Thanks for playing!")
         process.exit()
     }
     if (key.name === "space") {
         paused = !paused
-    } else keyQueue.push(key.name)
+    } else if (!paused) keyQueue.push(key.name)
 })
 
 const updateBoard = () => {
