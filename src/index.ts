@@ -53,6 +53,7 @@ const renderBoard = () => {
                     output += "⬞"
                     break
                 case "snake":
+                    output += "\x1b[36m" // (cyan)
                     const lastSnakeCell = snake.body[snake.body.length - 1]
                     if (lastSnakeCell.x === x && lastSnakeCell.y === y) {
                         switch (snake.direction) {
@@ -69,9 +70,10 @@ const renderBoard = () => {
                                 output += "v"
                         }
                     } else output += "#"
+                    output += "\x1b[0m" // (reset)
                     break
                 case "food":
-                    output += "o"
+                    output += "\x1b[33mo\x1b[0m" // (yellow)o(reset)
                     break
             }
         }
@@ -80,7 +82,7 @@ const renderBoard = () => {
     stdout.write(output)
     stdout.write(`Score: ${snake.body.length}\n`)
     stdout.write(
-        `WSAD, arrows or VIM keys to move. CTRL+C, CTRL+D or ESC to quit.\n`
+        `WSAD, arrows or VIM keys to move. CTRL+C, CTRL+D, ESC or q to quit.\n`
     )
 }
 
@@ -102,7 +104,12 @@ const trySpawnFood = () => {
 const keyQueue: string[] = []
 
 stdin.on("keypress", (char, key) => {
-    if (char === "\x03" || char === "\x04" || key.name === "escape") {
+    if (
+        char === "\x03" ||
+        char === "\x04" ||
+        key.name === "escape" ||
+        key.name === "q"
+    ) {
         // ctrl-c, ctrl-d or escape
         console.log("Thanks for playing!")
         process.exit()
