@@ -1,10 +1,20 @@
 import readline from "readline"
+import { homedir } from "os"
+import fs from "fs"
 const stdin = process.stdin,
     stdout = process.stdout
 
 readline.emitKeypressEvents(stdin)
 stdin.setRawMode(true)
 stdin.setEncoding("utf-8")
+
+let HIGHSCORE: number
+
+if (fs.existsSync(`${homedir()}/.snakeHighscore`))
+    HIGHSCORE = Number(
+        fs.readFileSync(`${homedir()}/.snakeHighscore`).toString()
+    )
+else HIGHSCORE = 0
 
 const COLUMN_COUNT = 100,
     ROW_COUNT = 30,
@@ -18,16 +28,16 @@ const COLUMN_COUNT = 100,
         right: "left",
     }
 
+const bold = (text: string) => `\x1b[1m${text}\x1b[0m`
+
 if (stdout.columns < COLUMN_COUNT || stdout.rows < ROW_COUNT) {
-    console.log(
-        `Your terminal is too small. Please resize it to at least ${COLUMN_COUNT} columns and ${ROW_COUNT} rows.`
-    )
+    console.log(bold(`Your terminal is too small. Please resize it to at least ${COLUMN_COUNT} columns and ${ROW_COUNT} rows.`))
     process.exit()
 }
 
 const board: CellState[][] = Array(ROW_COUNT)
-        .fill(null)
-        .map(() => Array(COLUMN_COUNT).fill("empty")),
+    .fill(null)
+    .map(() => Array(COLUMN_COUNT).fill("empty")),
     snake: Snake = {
         body: [
             {
@@ -36,13 +46,16 @@ const board: CellState[][] = Array(ROW_COUNT)
             },
         ],
         direction: "right",
+        score: 0,
     }
 
 let food: Location = {
-        x: Math.floor(Math.random() * COLUMN_COUNT),
-        y: Math.floor(Math.random() * ROW_COUNT),
-    },
-    paused = false
+    x: Math.floor(Math.random() * COLUMN_COUNT),
+    y: Math.floor(Math.random() * ROW_COUNT),
+},
+    superfood: Location | undefined,
+    paused = false,
+    gameQuit = false
 
 const renderBoard = () => {
     stdout.write("\x1Bc")
@@ -76,42 +89,76 @@ const renderBoard = () => {
                 case "food":
                     output += "\x1b[33mo\x1b[0m" // (yellow)o(reset)
                     break
+                case "superfood":
+                    output += "\x1b[31mO\x1b[0m" // (red)O(reset)
+                    break
             }
         }
         output += "\n"
     }
     stdout.write(output)
-    stdout.write(`Score: ${snake.body.length}\n`)
+    stdout.write(
+        `${bold("Score")}: ${snake.score} | ${bold("Highscore")}: ${snake.score > HIGHSCORE ? snake.score : HIGHSCORE
+        }\n`
+    )
     stdout.write(
         paused
-            ? "PAUSED. Space to unpause.\n"
-            : `WSAD, arrows or VIM keys to move. CTRL+C, CTRL+D or q to quit. Space to pause.\n`
+            ? `${bold("PAUSED")} | ${bold("Unpause")}: Space\n`
+            : `${bold("Movement")}: WSAD, Arrows, VIM keys | ${bold(
+                "Quit"
+            )}: CTRL+q, CTRL+d, q | ${bold("Pause")}: Space\n`
     )
 }
 
-const trySpawnFood = () => {
+const quit = (reason: "quit" | "lost") => {
+    gameQuit = true
+    stdout.write("\x1Bc")
+    if (reason === "quit") {
+        stdout.write(`${bold("Thanks for playing!")}\n`)
+    } else {
+        stdout.write(`${bold("Game over!")}\n`)
+    }
+
+    stdout.write(`${bold("Overall score")}: ${snake.score}\n`)
+
+    if (snake.score > HIGHSCORE) {
+        stdout.write(`${bold("New highscore!")}\n`)
+        fs.writeFileSync(`${homedir()}/.snakeHighscore`, String(snake.score))
+    } else if (!fs.existsSync(`${homedir()}/.snakeHighscore`))
+        fs.writeFileSync(`${homedir()}/.snakeHighscore`, String(snake.score))
+
+    process.exit()
+}
+
+const trySpawnFood = (type: "food" | "superfood") => {
     const randomX = Math.floor(Math.random() * COLUMN_COUNT),
         randomY = Math.floor(Math.random() * ROW_COUNT)
 
     if (!snake.body.some((cell) => cell.x === randomX && cell.y === randomY)) {
-        board[randomY][randomX] = "food"
-        food = {
-            x: randomX,
-            y: randomY,
+        if (type === "food") {
+            board[randomY][randomX] = "food"
+            food = {
+                x: randomX,
+                y: randomY,
+            }
+        } else {
+            board[randomY][randomX] = "superfood"
+            superfood = {
+                x: randomX,
+                y: randomY,
+            }
         }
     } else {
-        trySpawnFood()
+        trySpawnFood(type)
     }
 }
 
 const keyQueue: string[] = []
 
 stdin.on("keypress", (char, key) => {
-    if (char === "\x03" || char === "\x04" || key.name === "q") {
+    if (char === "\x03" || char === "\x04" || key.name === "q")
         // ctrl-c, ctrl-d or q
-        console.log("Thanks for playing!")
-        process.exit()
-    }
+        quit("quit")
     if (key.name === "space") {
         paused = !paused
     } else if (!paused) keyQueue.push(key.name)
@@ -122,22 +169,24 @@ const updateBoard = () => {
 
     board[food.y][food.x] = "food"
 
+    if (superfood) board[superfood.y][superfood.x] = "superfood"
+
     snake.body.forEach((cell) => (board[cell.y][cell.x] = "snake"))
 }
 
 const handleKey = (key: string) => {
-    if (["w", "up", "k"].includes(key)) {
+    if (["w", "up", "k"].includes(key))
         snake.direction = "up"
-    } else if (["s", "down", "j"].includes(key)) {
+    else if (["s", "down", "j"].includes(key))
         snake.direction = "down"
-    } else if (["a", "left", "h"].includes(key)) {
+    else if (["a", "left", "h"].includes(key))
         snake.direction = "left"
-    } else if (["d", "right", "l"].includes(key)) {
+    else if (["d", "right", "l"].includes(key))
         snake.direction = "right"
-    }
 }
 
 const tick = () => {
+    if (gameQuit) return
     updateBoard()
     renderBoard()
 
@@ -146,10 +195,7 @@ const tick = () => {
     handleKey(keyQueue.shift() || snake.direction)
 
     if (!paused) {
-        if (
-            OPPOSITE_DIRECTIONS[snake.direction] === oldDirection &&
-            snake.body.length > 1
-        )
+        if (OPPOSITE_DIRECTIONS[snake.direction] === oldDirection && snake.body.length > 1)
             snake.direction = oldDirection
 
         switch (snake.direction) {
@@ -190,14 +236,19 @@ const tick = () => {
         const newHead = snake.body[snake.body.length - 1]
 
         if (food.x === newHead.x && food.y === newHead.y) {
-            food = {
-                x: Math.floor(Math.random() * COLUMN_COUNT),
-                y: Math.floor(Math.random() * ROW_COUNT),
-            }
-        } else if (board[newHead.y][newHead.x] === "snake") {
-            console.log("Game over!")
-            process.exit()
-        } else snake.body.shift()
+            trySpawnFood("food")
+            if (Math.random() > 0.7 && !superfood) trySpawnFood("superfood")
+            snake.score++
+        } else if (
+            superfood &&
+            superfood.x === newHead.x &&
+            superfood.y === newHead.y
+        ) {
+            snake.score += 3
+            superfood = undefined
+        } else if (board[newHead.y][newHead.x] === "snake") quit("lost")
+        else snake.body.shift()
+    } else {
     }
 
     if (snake.direction === "up" || snake.direction === "down")
@@ -207,7 +258,7 @@ const tick = () => {
 
 tick()
 
-type CellState = "empty" | "snake" | "food"
+type CellState = "empty" | "snake" | "food" | "superfood"
 type Direction = "up" | "down" | "left" | "right"
 interface Location {
     x: number
@@ -216,4 +267,5 @@ interface Location {
 interface Snake {
     body: Location[]
     direction: Direction
+    score: number
 }
