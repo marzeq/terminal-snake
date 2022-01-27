@@ -71,8 +71,10 @@ const renderBoard = () => {
         output += "\n"
     }
     stdout.write(output)
-    stdout.write("\n")
     stdout.write(`Score: ${snake.body.length}\n`)
+    stdout.write(
+        `WSAD, arrows or VIM keys to move. CTRL+C, CTRL+D or ESC to quit.\n`
+    )
 }
 
 const trySpawnFood = () => {
@@ -93,7 +95,8 @@ const trySpawnFood = () => {
 const keyQueue: string[] = []
 
 stdin.on("keypress", (char, key) => {
-    if (char === "\x03" || key.name === "escape") {
+    if (char === "\x03" || char === "\x04" || key.name === "escape") {
+        // ctrl-c, ctrl-d or escape
         console.log("Thanks for playing!")
         process.exit()
     }
@@ -110,31 +113,14 @@ const updateBoard = () => {
 }
 
 const handleKey = (key: string) => {
-    switch (key) {
-        case "right":
-            snake.direction = "right"
-            break
-        case "d":
-            snake.direction = "right"
-            break
-        case "left":
-            snake.direction = "left"
-            break
-        case "a":
-            snake.direction = "left"
-            break
-        case "up":
-            snake.direction = "up"
-            break
-        case "w":
-            snake.direction = "up"
-            break
-        case "down":
-            snake.direction = "down"
-            break
-        case "s":
-            snake.direction = "down"
-            break
+    if (["w", "up", "k"].includes(key)) {
+        snake.direction = "up"
+    } else if (["s", "down", "j"].includes(key)) {
+        snake.direction = "down"
+    } else if (["a", "left", "h"].includes(key)) {
+        snake.direction = "left"
+    } else if (["d", "right", "l"].includes(key)) {
+        snake.direction = "right"
     }
 }
 
@@ -197,9 +183,7 @@ const tick = () => {
     } else if (board[newHead.y][newHead.x] === "snake") {
         console.log("Game over!")
         process.exit()
-    } else {
-        snake.body.shift()
-    }
+    } else snake.body.shift()
 
     if (snake.direction === "up" || snake.direction === "down")
         setTimeout(tick, MS_PER_FRAME * 1.75)
