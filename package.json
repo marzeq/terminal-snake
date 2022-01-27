@@ -1,5 +1,8 @@
 {
   "dependencies": {
     "@types/node": "^17.0.12"
+  },
+  "scripts": {
+    "local-install": "echo '!!! MAKE SURE YOU HAVE ~/.bin IN YOUR PATH !!!' && tsc && cp dist/index.js ~/.bin/snake && sed -i '1i #!/usr/bin/env node' ~/.bin/snake && chmod +x ~/.bin/snake"
   }
 }
