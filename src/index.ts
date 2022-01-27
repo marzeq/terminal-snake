@@ -18,6 +18,13 @@ const COLUMN_COUNT = 100,
         right: "left",
     }
 
+if (stdout.columns < COLUMN_COUNT || stdout.rows < ROW_COUNT) {
+    console.log(
+        `Your terminal is too small. Please resize it to at least ${COLUMN_COUNT} columns and ${ROW_COUNT} rows.`
+    )
+    process.exit()
+}
+
 const board: CellState[][] = Array(ROW_COUNT)
         .fill(null)
         .map(() => Array(COLUMN_COUNT).fill("empty")),
