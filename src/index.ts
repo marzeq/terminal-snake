@@ -7,7 +7,7 @@ stdin.setRawMode(true)
 stdin.setEncoding("utf-8")
 
 const COLUMN_COUNT = 100,
-    ROW_COUNT = 15,
+    ROW_COUNT = 30,
     MS_PER_FRAME = 1000 / 15,
     OPPOSITE_DIRECTIONS: {
         [key: string]: Direction
@@ -15,34 +15,53 @@ const COLUMN_COUNT = 100,
         up: "down",
         down: "up",
         left: "right",
-        right: "left"
+        right: "left",
     }
 
-const board: CellState[][] = Array(ROW_COUNT).fill(null).map(() => Array(COLUMN_COUNT).fill("empty")),
+const board: CellState[][] = Array(ROW_COUNT)
+        .fill(null)
+        .map(() => Array(COLUMN_COUNT).fill("empty")),
     snake: Snake = {
-        body: [{
-            x: 0,
-            y: 0
-        }],
-        direction: "right"
+        body: [
+            {
+                x: 0,
+                y: 0,
+            },
+        ],
+        direction: "right",
     }
 
 let food: Location = {
     x: Math.floor(Math.random() * COLUMN_COUNT),
-    y: Math.floor(Math.random() * ROW_COUNT)
+    y: Math.floor(Math.random() * ROW_COUNT),
 }
 
 const renderBoard = () => {
     stdout.write("\x1Bc")
     let output = ""
-    for (const row of board) {
-        for (const cell of row) {
+    for (const [y, row] of board.entries()) {
+        for (const [x, cell] of row.entries()) {
             switch (cell) {
                 case "empty":
-                    output += "."
+                    output += "⬞"
                     break
                 case "snake":
-                    output += "#"
+                    const lastSnakeCell = snake.body[snake.body.length - 1]
+                    if (lastSnakeCell.x === x && lastSnakeCell.y === y) {
+                        switch (snake.direction) {
+                            case "right":
+                                output += ">"
+                                break
+                            case "left":
+                                output += "<"
+                                break
+                            case "up":
+                                output += "^"
+                                break
+                            case "down":
+                                output += "v"
+                        }
+                    } else output += "#"
                     break
                 case "food":
                     output += "o"
@@ -60,11 +79,11 @@ const trySpawnFood = () => {
     const randomX = Math.floor(Math.random() * COLUMN_COUNT),
         randomY = Math.floor(Math.random() * ROW_COUNT)
 
-    if (!snake.body.some(cell => cell.x === randomX && cell.y === randomY)) {
+    if (!snake.body.some((cell) => cell.x === randomX && cell.y === randomY)) {
         board[randomY][randomX] = "food"
         food = {
             x: randomX,
-            y: randomY
+            y: randomY,
         }
     } else {
         trySpawnFood()
@@ -83,11 +102,11 @@ stdin.on("keypress", (char, key) => {
 })
 
 const updateBoard = () => {
-    board.forEach(row => row.fill("empty"))
+    board.forEach((row) => row.fill("empty"))
 
     board[food.y][food.x] = "food"
 
-    snake.body.forEach(cell => board[cell.y][cell.x] = "snake")
+    snake.body.forEach((cell) => (board[cell.y][cell.x] = "snake"))
 }
 
 const handleKey = (key: string) => {
@@ -127,7 +146,10 @@ const tick = () => {
 
     handleKey(keyQueue.shift() || snake.direction)
 
-    if (OPPOSITE_DIRECTIONS[snake.direction] === oldDirection && snake.body.length > 1)
+    if (
+        OPPOSITE_DIRECTIONS[snake.direction] === oldDirection &&
+        snake.body.length > 1
+    )
         snake.direction = oldDirection
 
     switch (snake.direction) {
@@ -136,7 +158,7 @@ const tick = () => {
             if (newXRight >= COLUMN_COUNT) newXRight = 0
             snake.body.push({
                 x: newXRight,
-                y: snake.body[snake.body.length - 1].y
+                y: snake.body[snake.body.length - 1].y,
             })
             break
         case "left":
@@ -144,7 +166,7 @@ const tick = () => {
             if (newXLeft < 0) newXLeft = COLUMN_COUNT - 1
             snake.body.push({
                 x: newXLeft,
-                y: snake.body[snake.body.length - 1].y
+                y: snake.body[snake.body.length - 1].y,
             })
             break
         case "up":
@@ -152,7 +174,7 @@ const tick = () => {
             if (newYUp < 0) newYUp = ROW_COUNT - 1
             snake.body.push({
                 x: snake.body[snake.body.length - 1].x,
-                y: newYUp
+                y: newYUp,
             })
             break
         case "down":
@@ -160,7 +182,7 @@ const tick = () => {
             if (newYDown >= ROW_COUNT) newYDown = 0
             snake.body.push({
                 x: snake.body[snake.body.length - 1].x,
-                y: newYDown
+                y: newYDown,
             })
             break
     }
@@ -170,7 +192,7 @@ const tick = () => {
     if (food.x === newHead.x && food.y === newHead.y) {
         food = {
             x: Math.floor(Math.random() * COLUMN_COUNT),
-            y: Math.floor(Math.random() * ROW_COUNT)
+            y: Math.floor(Math.random() * ROW_COUNT),
         }
     } else if (board[newHead.y][newHead.x] === "snake") {
         console.log("Game over!")
@@ -181,12 +203,10 @@ const tick = () => {
 
     if (snake.direction === "up" || snake.direction === "down")
         setTimeout(tick, MS_PER_FRAME * 1.75)
-    else
-        setTimeout(tick, MS_PER_FRAME)
+    else setTimeout(tick, MS_PER_FRAME)
 }
 
 tick()
-
 
 type CellState = "empty" | "snake" | "food"
 type Direction = "up" | "down" | "left" | "right"
