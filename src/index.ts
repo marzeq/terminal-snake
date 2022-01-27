@@ -71,7 +71,7 @@ const trySpawnFood = () => {
     }
 }
 
-let lastPressedKey: string
+const keyQueue: string[] = []
 
 stdin.on("keypress", (char, key) => {
     if (char === "\x03" || key.name === "escape") {
@@ -79,7 +79,7 @@ stdin.on("keypress", (char, key) => {
         process.exit()
     }
 
-    lastPressedKey = key.name
+    keyQueue.push(key.name)
 })
 
 const updateBoard = () => {
@@ -90,14 +90,8 @@ const updateBoard = () => {
     snake.body.forEach(cell => board[cell.y][cell.x] = "snake")
 }
 
-
-const tick = () => {
-    updateBoard()
-    renderBoard()
-
-    const oldDirection = snake.direction
-
-    switch (lastPressedKey) {
+const handleKey = (key: string) => {
+    switch (key) {
         case "right":
             snake.direction = "right"
             break
@@ -123,6 +117,15 @@ const tick = () => {
             snake.direction = "down"
             break
     }
+}
+
+const tick = () => {
+    updateBoard()
+    renderBoard()
+
+    const oldDirection = snake.direction
+
+    handleKey(keyQueue.shift() || snake.direction)
 
     if (OPPOSITE_DIRECTIONS[snake.direction] === oldDirection && snake.body.length > 1)
         snake.direction = oldDirection
