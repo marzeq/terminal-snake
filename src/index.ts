@@ -31,13 +31,17 @@ const COLUMN_COUNT = 100,
 const bold = (text: string) => `\x1b[1m${text}\x1b[0m`
 
 if (stdout.columns < COLUMN_COUNT || stdout.rows < ROW_COUNT) {
-    console.log(bold(`Your terminal is too small. Please resize it to at least ${COLUMN_COUNT} columns and ${ROW_COUNT} rows.`))
+    console.log(
+        bold(
+            `Your terminal is too small. Please resize it to at least ${COLUMN_COUNT} columns and ${ROW_COUNT} rows.`
+        )
+    )
     process.exit()
 }
 
 const board: CellState[][] = Array(ROW_COUNT)
-    .fill(null)
-    .map(() => Array(COLUMN_COUNT).fill("empty")),
+        .fill(null)
+        .map(() => Array(COLUMN_COUNT).fill("empty")),
     snake: Snake = {
         body: [
             {
@@ -50,9 +54,9 @@ const board: CellState[][] = Array(ROW_COUNT)
     }
 
 let food: Location = {
-    x: Math.floor(Math.random() * COLUMN_COUNT),
-    y: Math.floor(Math.random() * ROW_COUNT),
-},
+        x: Math.floor(Math.random() * COLUMN_COUNT),
+        y: Math.floor(Math.random() * ROW_COUNT),
+    },
     superfood: Location | undefined,
     paused = false,
     gameQuit = false
@@ -72,25 +76,25 @@ const renderBoard = () => {
                     if (lastSnakeCell.x === x && lastSnakeCell.y === y) {
                         switch (snake.direction) {
                             case "right":
-                                output += ">"
+                                output += "►"
                                 break
                             case "left":
-                                output += "<"
+                                output += "◄"
                                 break
                             case "up":
-                                output += "^"
+                                output += "▲"
                                 break
                             case "down":
-                                output += "v"
+                                output += "▼"
                         }
-                    } else output += "#"
+                    } else output += "■"
                     output += "\x1b[0m" // (reset)
                     break
                 case "food":
-                    output += "\x1b[33mo\x1b[0m" // (yellow)o(reset)
+                    output += "\x1b[33m○\x1b[0m" // (yellow)o(reset)
                     break
                 case "superfood":
-                    output += "\x1b[31mO\x1b[0m" // (red)O(reset)
+                    output += "\x1b[31m●\x1b[0m" // (red)O(reset)
                     break
             }
         }
@@ -98,15 +102,16 @@ const renderBoard = () => {
     }
     stdout.write(output)
     stdout.write(
-        `${bold("Score")}: ${snake.score} | ${bold("Highscore")}: ${snake.score > HIGHSCORE ? snake.score : HIGHSCORE
+        `${bold("Score")}: ${snake.score} | ${bold("Highscore")}: ${
+            snake.score > HIGHSCORE ? snake.score : HIGHSCORE
         }\n`
     )
     stdout.write(
         paused
             ? `${bold("PAUSED")} | ${bold("Unpause")}: Space\n`
             : `${bold("Movement")}: WSAD, Arrows, VIM keys | ${bold(
-                "Quit"
-            )}: CTRL+q, CTRL+d, q | ${bold("Pause")}: Space\n`
+                  "Quit"
+              )}: CTRL+q, CTRL+d, q | ${bold("Pause")}: Space\n`
     )
 }
 
@@ -175,14 +180,10 @@ const updateBoard = () => {
 }
 
 const handleKey = (key: string) => {
-    if (["w", "up", "k"].includes(key))
-        snake.direction = "up"
-    else if (["s", "down", "j"].includes(key))
-        snake.direction = "down"
-    else if (["a", "left", "h"].includes(key))
-        snake.direction = "left"
-    else if (["d", "right", "l"].includes(key))
-        snake.direction = "right"
+    if (["w", "up", "k"].includes(key)) snake.direction = "up"
+    else if (["s", "down", "j"].includes(key)) snake.direction = "down"
+    else if (["a", "left", "h"].includes(key)) snake.direction = "left"
+    else if (["d", "right", "l"].includes(key)) snake.direction = "right"
 }
 
 const tick = () => {
@@ -195,7 +196,10 @@ const tick = () => {
     handleKey(keyQueue.shift() || snake.direction)
 
     if (!paused) {
-        if (OPPOSITE_DIRECTIONS[snake.direction] === oldDirection && snake.body.length > 1)
+        if (
+            OPPOSITE_DIRECTIONS[snake.direction] === oldDirection &&
+            snake.body.length > 1
+        )
             snake.direction = oldDirection
 
         switch (snake.direction) {
